@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Plataforma Imobiliária</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Firebase setup and initialization ---
+        let app, db, auth, userId;
+        let isAuthReady = false;
+
+        const main = async () => {
+            console.log("Initializing Firebase...");
+            try {
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config is missing.");
+                    document.getElementById('loading-message').textContent = 'Erro de configuração. Recarregue a página.';
+                    return;
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Use a custom auth token if available, otherwise sign in anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        document.getElementById('loading-message').style.display = 'none';
+                        showPage('admin-dashboard-page');
+                        setupRealtimeListener();
+                    } else {
+                        isAuthReady = false;
+                        document.getElementById('loading-message').style.display = 'none';
+                        showPage('admin-login-page');
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                document.getElementById('loading-message').textContent = 'Falha na inicialização do Firebase.';
+            }
+        };
+
+        const setupRealtimeListener = () => {
+            if (!isAuthReady || !db) return;
+            const propertiesCollection = collection(db, `artifacts/${appId}/users/${userId}/properties`);
+            
+            onSnapshot(propertiesCollection, (querySnapshot) => {
+                const properties = [];
+                querySnapshot.forEach((doc) => {
+                    properties.push({ id: doc.id, ...doc.data() });
+                });
+                renderProperties(properties);
+            }, (error) => {
+                console.error("Error fetching documents:", error);
+                document.getElementById('properties-list').innerHTML = `<p class="text-red-500">Erro ao carregar imóveis.</p>`;
+            });
+        };
+
+        // --- Page and UI Rendering ---
+        const pages = ['loading-page', 'admin-login-page', 'admin-dashboard-page'];
+
+        window.showPage = (pageId) => {
+            pages.forEach(p => {
+                const element = document.getElementById(p);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+            const activePage = document.getElementById(pageId);
+            if (activePage) {
+                activePage.style.display = 'block';
+            }
+        };
+
+        const renderProperties = (properties) => {
+            const listContainer = document.getElementById('properties-list');
+            listContainer.innerHTML = '';
+            if (properties.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 text-center">Nenhum imóvel cadastrado ainda.</p>';
+                return;
+            }
+            properties.forEach(prop => {
+                const propertyItem = document.createElement('div');
+                propertyItem.className = 'bg-white p-4 rounded-xl shadow-md mb-4';
+                propertyItem.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">${prop.title}</h3>
+                            <p class="text-gray-600 text-sm mt-1">${prop.location || 'Localização não informada'}</p>
+                            <p class="text-gray-600 text-sm">Status: <span class="font-medium text-indigo-600">${prop.status}</span></p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="text-gray-800 font-bold">${prop.price ? `R$ ${prop.price.toLocaleString('pt-BR')}` : 'Preço não informado'}</span>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(propertyItem);
+            });
+        };
+
+        // --- Form Submission Handlers ---
+        window.handleLogin = async (event) => {
+            event.preventDefault();
+            const email = event.target.email.value;
+            const password = event.target.password.value;
+            // A real login would be implemented here. For this prototype, we'll simulate success.
+            console.log("Simulating login for:", email);
+            showPage('admin-dashboard-page');
+        };
+
+        window.handleAddProperty = async (event) => {
+            event.preventDefault();
+            if (!db || !userId) {
+                console.error("Database not initialized or user not authenticated.");
+                return;
+            }
+            const title = event.target.propertyTitle.value;
+            const location = event.target.propertyLocation.value;
+            const price = parseFloat(event.target.propertyPrice.value);
+            
+            if (!title || !location || !price) {
+                console.warn("Preencha todos os campos.");
+                return;
+            }
+
+            const newProperty = {
+                title: title,
+                location: location,
+                price: price,
+                status: 'published',
+                createdAt: new Date(),
+                // Add other fields as needed based on the data model
+            };
+
+            try {
+                const propertiesCollection = collection(db, `artifacts/${appId}/users/${userId}/properties`);
+                await addDoc(propertiesCollection, newProperty);
+                console.log("Property added successfully!");
+                event.target.reset();
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        };
+
+        // Initial setup
+        window.onload = main;
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [data-page] { display: none; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <a href="#" class="no-underline text-gray-800" onclick="showPage('admin-dashboard-page')">Admin Panel</a>
+            </h1>
+            <button onclick="window.location.reload();" class="text-sm font-semibold text-gray-600 hover:text-gray-900">Sair (Recarregar)</button>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Loading Page -->
+        <section id="loading-page" class="w-full h-screen flex items-center justify-center" data-page="active">
+            <div class="text-center text-gray-700">
+                <svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p id="loading-message">Carregando...</p>
+            </div>
+        </section>
+
+        <!-- Admin Login Page -->
+        <section id="admin-login-page" class="w-full h-screen flex items-center justify-center">
+            <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Login Administrativo</h2>
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 font-medium mb-2">E-mail</label>
+                        <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-gray-700 font-medium mb-2">Senha</label>
+                        <input type="password" id="password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">Entrar</button>
+                    <p class="text-center text-gray-500 text-sm mt-4">Este é um protótipo, o login é simulado.</p>
+                </form>
+            </div>
+        </section>
+        
+        <!-- Admin Dashboard Page -->
+        <section id="admin-dashboard-page" class="py-8 hidden">
+            <div class="max-w-7xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Gerenciar Imóveis</h2>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Adicionar Novo Imóvel</h3>
+                    <form onsubmit="handleAddProperty(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="propertyTitle" class="block text-sm font-medium text-gray-700">Título</label>
+                            <input type="text" id="propertyTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2" required>
+                        </div>
+                        <div>
+                            <label for="propertyLocation" class="block text-sm font-medium text-gray-700">Localização</label>
+                            <input type="text" id="propertyLocation" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2" required>
+                        </div>
+                        <div>
+                            <label for="propertyPrice" class="block text-sm font-medium text-gray-700">Preço (R$)</label>
+                            <input type="number" id="propertyPrice" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2" required>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">Cadastrar Imóvel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Lista de Imóveis</h3>
+                    <div id="properties-list">
+                        <!-- Property cards will be rendered here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-auto py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+            © 2024 Plataforma Imobiliária. Todos os direitos reservados.
+        </div>
+    </footer>
+</body>
+</html>
