@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imobiliária - Encontre seu Imóvel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [data-page] { display: none; }
+        [data-page="active"] { display: block; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <a href="#" class="no-underline text-gray-800" onclick="showPage('home-page')">Plataforma Imobiliária</a>
+            </h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 font-semibold" onclick="showPage('property-list-page')">Imóveis</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Home Page -->
+        <section id="home-page" data-page="active" class="py-16">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">Seu novo imóvel está aqui.</h2>
+                <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Navegue por nossa seleção de imóveis exclusivos para venda e locação. Encontre a casa ou apartamento dos seus sonhos.</p>
+                <a href="#" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-indigo-700 transition duration-300" onclick="showPage('property-list-page')">Ver Imóveis</a>
+            </div>
+        </section>
+
+        <!-- Property List Page -->
+        <section id="property-list-page" data-page class="py-8">
+            <div class="max-w-7xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Imóveis Disponíveis</h2>
+                <!-- Filter Section - Simplified -->
+                <div class="bg-white rounded-xl p-6 shadow-md mb-8">
+                    <h3 class="font-semibold text-gray-700 mb-4">Filtrar por:</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="filter-location" onkeyup="handleFilters()" placeholder="Bairro ou cidade" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <select id="filter-purpose" onchange="handleFilters()" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Finalidade</option>
+                            <option value="Venda">Venda</option>
+                            <option value="Locação">Locação</option>
+                        </select>
+                        <select id="filter-type" onchange="handleFilters()" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Tipo</option>
+                            <option value="Apartamento">Apartamento</option>
+                            <option value="Casa">Casa</option>
+                            <option value="Terreno">Terreno</option>
+                        </select>
+                        <input type="number" id="filter-bedrooms" onkeyup="handleFilters()" placeholder="Nº de Quartos" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" id="filter-min-price" onkeyup="handleFilters()" placeholder="Preço Mínimo" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" id="filter-max-price" onkeyup="handleFilters()" placeholder="Preço Máximo" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Property Cards Container -->
+                <div id="property-list-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards will be injected here by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Property Detail Page -->
+        <section id="property-detail-page" data-page class="py-8">
+            <div id="property-detail-container" class="max-w-7xl mx-auto px-4">
+                <!-- Details will be injected here by JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-auto py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+            © 2024 Plataforma Imobiliária. Todos os direitos reservados.
+        </div>
+    </footer>
+
+    <script>
+        const pages = ['home-page', 'property-list-page', 'property-detail-page'];
+        const propertyData = [
+            { 
+                id: 1, 
+                title: 'Apartamento com 2 Quartos', 
+                purpose: 'Venda', 
+                price: 650000, 
+                bedrooms: 2, 
+                bathrooms: 2, 
+                area: 85, 
+                location: 'Boa Viagem, Recife', 
+                description: 'Apartamento espaçoso em um dos bairros mais desejados de Recife. Perto da praia e com fácil acesso a comércios e serviços.',
+                images: [
+                    'https://placehold.co/800x600/F0F4C3/2E7D32?text=Apartamento+2Q+-+Sala', 
+                    'https://placehold.co/800x600/E1BEE7/6A1B9A?text=Apartamento+2Q+-+Quarto',
+                    'https://placehold.co/800x600/C8E6C9/218838?text=Apartamento+2Q+-+Cozinha'
+                ]
+            },
+            { 
+                id: 2, 
+                title: 'Casa com Piscina', 
+                purpose: 'Venda', 
+                price: 980000, 
+                bedrooms: 3, 
+                bathrooms: 4, 
+                area: 150, 
+                location: 'Candeias, Jaboatão', 
+                description: 'Uma linda casa com área de lazer completa, perfeita para quem busca conforto e tranquilidade.',
+                images: [
+                    'https://placehold.co/800x600/B2EBF2/00695C?text=Casa+c/Piscina+-+Vista+Geral', 
+                    'https://placehold.co/800x600/E8F5E9/2E7D32?text=Casa+c/Piscina+-+Piscina',
+                    'https://placehold.co/800x600/FCE4EC/AD1457?text=Casa+c/Piscina+-+Jardim'
+                ]
+            },
+            { 
+                id: 3, 
+                title: 'Sala Comercial', 
+                purpose: 'Locação', 
+                price: 3500, 
+                bedrooms: 0, 
+                bathrooms: 1, 
+                area: 40, 
+                location: 'Centro, Olinda', 
+                description: 'Ideal para escritório ou consultório. Localização central, próxima a bancos e restaurantes.',
+                images: [
+                    'https://placehold.co/800x600/E1BEE7/6A1B9A?text=Sala+Comercial+-+Vista+Interna',
+                    'https://placehold.co/800x600/FCE4EC/AD1457?text=Sala+Comercial+-+Vista+Externa'
+                ]
+            }
+        ];
+
+        function showPage(pageId, data = null) {
+            pages.forEach(p => {
+                document.getElementById(p).dataset.page = '';
+            });
+            document.getElementById(pageId).dataset.page = 'active';
+
+            if (pageId === 'property-list-page') {
+                handleFilters();
+            } else if (pageId === 'property-detail-page' && data) {
+                renderPropertyDetail(data);
+            }
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        function handleFilters() {
+            const location = document.getElementById('filter-location').value.toLowerCase();
+            const purpose = document.getElementById('filter-purpose').value;
+            const type = document.getElementById('filter-type').value;
+            const bedrooms = document.getElementById('filter-bedrooms').value;
+            const minPrice = document.getElementById('filter-min-price').value;
+            const maxPrice = document.getElementById('filter-max-price').value;
+
+            const filteredData = propertyData.filter(prop => {
+                const matchesLocation = location === '' || prop.location.toLowerCase().includes(location);
+                const matchesPurpose = purpose === '' || prop.purpose === purpose;
+                const matchesType = type === '' || prop.type === type;
+                const matchesBedrooms = bedrooms === '' || prop.bedrooms.toString() === bedrooms;
+                const matchesMinPrice = minPrice === '' || prop.price >= parseFloat(minPrice);
+                const matchesMaxPrice = maxPrice === '' || prop.price <= parseFloat(maxPrice);
+
+                return matchesLocation && matchesPurpose && matchesType && matchesBedrooms && matchesMinPrice && matchesMaxPrice;
+            });
+
+            renderPropertyList(filteredData);
+        }
+
+        function renderPropertyList(properties) {
+            const container = document.getElementById('property-list-container');
+            container.innerHTML = '';
+
+            if (properties.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 font-medium py-12">Nenhum imóvel encontrado com os filtros aplicados.</div>';
+                return;
+            }
+
+            properties.forEach(prop => {
+                const card = `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:scale-[1.02] cursor-pointer" onclick="showPropertyDetail(${prop.id})">
+                        <img src="${prop.images[0]}" alt="${prop.title}" class="w-full h-56 object-cover">
+                        <div class="p-6">
+                            <div class="flex items-center text-sm font-medium text-gray-500 mb-2">
+                                <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full">${prop.purpose}</span>
+                                <span class="ml-auto text-indigo-600 font-bold">${formatCurrency(prop.price)}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">${prop.title}</h3>
+                            <p class="text-gray-600 mb-4">${prop.location}</p>
+                            <div class="flex items-center space-x-4 text-gray-500 text-sm">
+                                <span><strong class="text-gray-900">${prop.bedrooms}</strong> quartos</span>
+                                <span><strong class="text-gray-900">${prop.bathrooms}</strong> banheiros</span>
+                                <span><strong class="text-gray-900">${prop.area}</strong> m²</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        function showPropertyDetail(id) {
+            const prop = propertyData.find(p => p.id === id);
+            if (prop) {
+                showPage('property-detail-page', prop);
+            }
+        }
+
+        function renderPropertyDetail(prop) {
+            const container = document.getElementById('property-detail-container');
+            container.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6 md:p-10 mb-8">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <!-- Image Gallery (Simplified) -->
+                        <div class="w-full md:w-2/3">
+                            <img src="${prop.images[0]}" alt="${prop.title}" class="w-full rounded-xl shadow-md mb-4">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                ${prop.images.slice(1).map(img => `<img src="${img}" class="w-full h-32 object-cover rounded-lg">`).join('')}
+                            </div>
+                        </div>
+                        <!-- Details and CTA -->
+                        <div class="w-full md:w-1/3">
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">${prop.title}</h2>
+                            <p class="text-xl text-indigo-600 font-bold mb-4">${formatCurrency(prop.price)}</p>
+                            <p class="text-gray-600 mb-4">${prop.location}</p>
+                            <p class="text-gray-700 mb-6">${prop.description}</p>
+                            
+                            <!-- Key Features -->
+                            <div class="grid grid-cols-2 gap-4 text-gray-700 mb-8">
+                                <div class="flex items-center"><span class="font-semibold text-gray-900">Quartos:</span><span class="ml-2">${prop.bedrooms}</span></div>
+                                <div class="flex items-center"><span class="font-semibold text-gray-900">Banheiros:</span><span class="ml-2">${prop.bathrooms}</span></div>
+                                <div class="flex items-center"><span class="font-semibold text-gray-900">Área:</span><span class="ml-2">${prop.area} m²</span></div>
+                                <div class="flex items-center"><span class="font-semibold text-gray-900">Finalidade:</span><span class="ml-2">${prop.purpose}</span></div>
+                            </div>
+
+                            <!-- CTA Block -->
+                            <div class="bg-gray-50 rounded-lg p-6">
+                                <h3 class="font-bold text-gray-800 text-lg mb-4">Interessado?</h3>
+                                <a href="https://wa.me/5581999999999?text=Olá,%20gostaria%20de%20saber%20mais%20sobre%20o%20imóvel%20${prop.title}%20em%20${prop.location}." target="_blank" class="w-full flex items-center justify-center bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.45 0-9.84 4.49-9.84 10.04 0 1.95.55 3.8 1.63 5.41L2 22l5.59-1.46c1.55.85 3.32 1.3 5.45 1.3 5.45 0 9.84-4.49 9.84-10.04S17.49 2 12.04 2zM12.04 20.94c-1.85 0-3.6-.47-5.11-1.35L5 20.48l1.45-4.22c-.93-1.5-1.42-3.19-1.42-4.96C5.03 7.82 8.16 4.96 12.04 4.96c3.92 0 7.03 2.86 7.03 6.42 0 3.56-3.11 6.42-7.03 6.42-.8 0-1.5-.16-2.16-.43l-.75.43-2.12.56 1.4-1.47c-.8-.93-1.28-2.07-1.28-3.3C7.58 7.82 10.71 4.96 14.59 4.96c3.92 0 7.03 2.86 7.03 6.42 0 3.56-3.11 6.42-7.03 6.42zM17.18 14.7c-.24-.12-.8-.4-.93-.45s-.24-.09-.34-.09c-.1 0-.12.06-.17.15-.05.09-.2.24-.25.29-.05.06-.1.06-.19.03-.1-.03-.4-.15-.65-.4-.25-.25-.4-.5-.45-.58-.06-.08-.06-.14.03-.22.09-.09.2-.24.27-.36.08-.12.1-.21.15-.3.05-.09-.05-.21-.1-.3-.05-.09-.45-1.08-.6-1.47-.15-.39-.3-.34-.4-.35-.1-.01-.21-.01-.32-.01s-.25.04-.37.15c-.12.11-.46.45-.46 1.09s.47 1.25.53 1.34c.05.08.77 1.18 1.86 1.64 1.1.46 1.1 1.09.28 1.09s-.79-.5-.87-.59c-.08-.09-.17-.11-.3-.13z"/></svg>
+                                    Falar no WhatsApp
+                                </a>
+                                <button class="w-full mt-4 bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition duration-300">Agendar Visita</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Initial render
+        showPage('home-page');
+    </script>
+</body>
+</html>
